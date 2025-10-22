@@ -1,0 +1,10 @@
+
+services:
+  db:
+    image: postgres:18.0-bookworm
+    ports:
+      - 65432:5432
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - "./init.sql:/docker-entrypoint-initdb.d/init.sql:ro"
