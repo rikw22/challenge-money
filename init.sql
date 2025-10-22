@@ -12,8 +12,8 @@ CREATE TABLE operationtype (
  
 CREATE TABLE transaction (
   ID UUID PRIMARY KEY DEFAULT uuidv7(),
-  account_id INTEGER,
-  operationtype_id INTEGER,
+  account_id INTEGER REFERENCES account(ID),
+  operationtype_id INTEGER REFERENCES operationtype(ID),
   amount INTEGER,
   eventdate TIMESTAMP
 );
