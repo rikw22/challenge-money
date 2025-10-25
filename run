@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "Starting postgres container..."
+docker compose up -d
+echo $'Container started!\n\n'
+
+if command -v air &> /dev/null; then
+    echo "Running with air (live reloading enabled)..."
+    air
+else
+    echo "air command is not available. Falling back to go run without live reloading..."
+    echo "To enable live reloading, install air: go install github.com/air-verse/air@latest"
+    go run ./cmd/api/main.go
+fi
