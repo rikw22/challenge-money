@@ -2,6 +2,7 @@
 services:
   db:
     image: postgres:18.0-bookworm
+    restart: unless-stopped
     ports:
       - 65432:5432
     environment:
