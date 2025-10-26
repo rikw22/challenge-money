@@ -11,12 +11,14 @@ import (
 )
 
 type Handler struct {
-	validate *validator.Validate
+	validate   *validator.Validate
+	repository Repository
 }
 
-func NewHandler(validate *validator.Validate) *Handler {
+func NewHandler(validate *validator.Validate, repository Repository) *Handler {
 	return &Handler{
-		validate: validate,
+		validate:   validate,
+		repository: repository,
 	}
 }
 
