@@ -50,7 +50,15 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement
+	account, err := h.repository.Create(r.Context(), input.DocumentNumber)
+	if err != nil {
+		render.Render(w, r, httperrors.ErrInternalServer(err))
+		return
+	}
 
-	w.WriteHeader(http.StatusCreated)
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, &GetResponse{
+		AccountId:      account.ID,
+		DocumentNumber: account.DocumentNumber,
+	})
 }
