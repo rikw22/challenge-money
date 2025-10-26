@@ -10,6 +10,7 @@ GET {{BASEURL}}/health
 ### Retrieve the account information
 GET {{BASEURL}}/accounts/{{DEFAULT_ACCOUNT_ID}}
 
+
 ### Create an account
 POST {{BASEURL}}/accounts
 Content-Type: application/json
@@ -19,6 +20,22 @@ x-idempotency-key: {{$uuid}}
   "document_number": "12345678900"
 }
 
+### Create an account with invalid params
+POST {{BASEURL}}/accounts
+Content-Type: application/json
+x-idempotency-key: {{$uuid}}
+
+{
+  "document_number": 123
+}
+
+### Create an account with empty body
+POST {{BASEURL}}/accounts
+Content-Type: application/json
+x-idempotency-key: {{$uuid}}
+
+{}
+
 ### Create a transaction
 POST {{BASEURL}}/transactions
 Content-Type: application/json
@@ -26,6 +43,24 @@ x-idempotency-key: {{$uuid}}
 
 {
   "account_id": 1,
+  "operation_type_id": 4,
+  "amount": 123.45
+}
+
+### Create a transaction with empty body
+POST {{BASEURL}}/transactions
+Content-Type: application/json
+x-idempotency-key: {{$uuid}}
+
+{}
+
+### Create a transaction with account_id 0
+POST {{BASEURL}}/transactions
+Content-Type: application/json
+x-idempotency-key: {{$uuid}}
+
+{
+  "account_id": 0,
   "operation_type_id": 4,
   "amount": 123.45
 }
