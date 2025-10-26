@@ -47,3 +47,13 @@ var ErrNotFound = &ErrResponse{
 	HTTPStatusCode: http.StatusNotFound,
 	StatusText:     "Resource not found.",
 }
+
+// ErrInternalServer returns a 500 Internal Server Error response.
+func ErrInternalServer(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusInternalServerError,
+		StatusText:     "Internal server error.",
+		ErrorText:      err.Error(),
+	}
+}
