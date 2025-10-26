@@ -1,4 +1,31 @@
 ### @TODO: Explain how to use this file
 
+### Variables
+@BASEURL =  http://localhost:3000
+@DEFAULT_ACCOUNT_ID=1
+
 ### Health check
-http://localhost:3000/health
+GET {{BASEURL}}/health
+
+### Retrieve the account information
+GET {{BASEURL}}/accounts/{{DEFAULT_ACCOUNT_ID}}
+
+### Create an account
+POST {{BASEURL}}/accounts
+Content-Type: application/json
+x-idempotency-key: {{$uuid}}
+
+{
+  "document_number": "12345678900"
+}
+
+### Create a transaction
+POST {{BASEURL}}/transactions
+Content-Type: application/json
+x-idempotency-key: {{$uuid}}
+
+{
+  "account_id": 1,
+  "operation_type_id": 4,
+  "amount": 123.45
+}
