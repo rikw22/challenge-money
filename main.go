@@ -32,13 +32,14 @@ func main() {
 	defer dbPool.Close()
 
 	accountRepo := account.NewRepository(dbPool)
+	transactionRepo := transaction.NewRepository(dbPool)
 
 	// HTTP
 	validate = validator.New()
 
 	healthHandler := health.NewHandler()
 	accountHandler := account.NewHandler(validate, accountRepo)
-	transactionHandler := transaction.NewHandler(validate)
+	transactionHandler := transaction.NewHandler(validate, transactionRepo)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
