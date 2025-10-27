@@ -21,7 +21,7 @@ func main() {
 	// DB
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgresql://postgres:postgres@localhost:65432/postgres?sslmode=disable"
+		dbURL = "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 		log.Println("DATABASE_URL environment variable is not set, failing back to ", dbURL)
 	}
 

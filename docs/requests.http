@@ -1,7 +1,7 @@
 ### @TODO: Explain how to use this file
 
 ### Variables
-@BASEURL =  http://localhost:3000
+@BASEURL =  http://localhost:8080
 @DEFAULT_ACCOUNT_ID=1
 
 ### Health check
