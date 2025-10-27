@@ -96,6 +96,13 @@ The server will start on `http://localhost:8080` by default.
 
 ## API Endpoints
 
+### Postman Collection
+https://github.com/rikw22/challenge-money/raw/refs/heads/main/docs/postman_collection.json
+
+### Http Client Collection
+https://raw.githubusercontent.com/rikw22/challenge-money/refs/heads/main/docs/requests.http
+
+
 ### Health Check
 ```bash
 curl http://localhost:8080/health
