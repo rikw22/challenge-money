@@ -23,19 +23,18 @@ func NewHandler(validate *validator.Validate, repository Repository) *Handler {
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if accountId := chi.URLParam(r, "accountId"); accountId == "" {
+	accountId := chi.URLParam(r, "accountId")
+	if accountId == "" {
 		render.Render(w, r, httperrors.ErrNotFound)
 		return
 	}
 
-	// TODO: Implement
+	account, err := h.repository.GetByID(r.Context(), accountId)
+	if err != nil {
+		render.Render(w, r, httperrors.ErrInternalServer(err))
+	}
 
-	json.NewEncoder(w).Encode(&GetResponse{
-		AccountId:      123,
-		DocumentNumber: "123",
-	})
+	render.JSON(w, r, account)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
