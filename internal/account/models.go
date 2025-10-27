@@ -6,9 +6,15 @@ type CreateRequest struct {
 	DocumentNumber string `json:"document_number" validate:"required"`
 }
 
-type GetResponse struct {
-	AccountId      int    `json:"account_id"`
+type CreateResponse struct {
+	ID             int    `json:"id"`
 	DocumentNumber string `json:"document_number"`
+}
+
+type GetResponse struct {
+	ID             int    `json:"id"`
+	DocumentNumber string `json:"document_number"`
+	CreatedAt      string `json:"created_at"`
 }
 
 type Account struct {

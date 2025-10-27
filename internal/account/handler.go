@@ -3,6 +3,7 @@ package account
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -35,7 +36,11 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.JSON(w, r, account)
+	render.JSON(w, r, &GetResponse{
+		ID:             account.ID,
+		DocumentNumber: account.DocumentNumber,
+		CreatedAt:      account.CreatedAt.Format(time.RFC3339),
+	})
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -60,8 +65,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, &GetResponse{
-		AccountId:      account.ID,
+	render.JSON(w, r, &CreateResponse{
+		ID:             account.ID,
 		DocumentNumber: account.DocumentNumber,
 	})
 }
