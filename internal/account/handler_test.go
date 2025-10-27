@@ -94,7 +94,7 @@ func TestHandler_Get(t *testing.T) {
 			}
 
 			if tt.expectedStatus == http.StatusOK {
-				var response Account
+				var response GetResponse
 				if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
 					t.Fatalf("failed to decode response: %v", err)
 				}
@@ -210,7 +210,7 @@ func TestHandler_Create(t *testing.T) {
 					t.Fatalf("failed to decode response: %v", err)
 				}
 
-				if response.AccountId == 0 {
+				if response.ID == 0 {
 					t.Error("expected non-zero account_id in response")
 				}
 
