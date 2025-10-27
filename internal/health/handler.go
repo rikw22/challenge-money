@@ -1,8 +1,9 @@
 package health
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/go-chi/render"
 )
 
 type CheckResponse struct {
@@ -16,5 +17,5 @@ func NewHandler() *Handler {
 }
 
 func (h *Handler) Check(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(&CheckResponse{Status: "UP"})
+	render.JSON(w, r, &CheckResponse{Status: "UP"})
 }
