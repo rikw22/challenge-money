@@ -107,7 +107,13 @@ https://raw.githubusercontent.com/rikw22/challenge-money/refs/heads/main/docs/re
 ```bash
 curl http://localhost:8080/health
 ```
-Returns the health status of the service.
+
+**Response** (200 OK):
+```json
+{
+  "status": "UP"
+}
+```
 
 ### Create Account
 ```bash
@@ -121,7 +127,7 @@ curl -X POST http://localhost:8080/accounts \
 **Response** (201 Created):
 ```json
 {
-  "account_id": 1,
+  "id": 1,
   "document_number": "12345678901"
 }
 ```
@@ -134,8 +140,9 @@ curl http://localhost:8080/accounts/1
 **Response** (200 OK):
 ```json
 {
-  "account_id": 1,
-  "document_number": "12345678901"
+  "id": 1,
+  "document_number": "12345678901",
+  "created_at": "2025-10-27T00:18:14Z"
 }
 ```
 
@@ -145,7 +152,7 @@ curl -X POST http://localhost:8080/transactions \
   -H "Content-Type: application/json" \
   -d '{
     "account_id": 1,
-    "operation_type_id": 1,
+    "operation_type_id": 4,
     "amount": 123.45
   }'
 ```
@@ -159,10 +166,10 @@ curl -X POST http://localhost:8080/transactions \
 **Response** (201 Created):
 ```json
 {
-  "transaction_id": "019a096b-ad9f-7f0e-88a4-9c93a754b029",
+  "id": "019a096b-ad9f-7f0e-88a4-9c93a754b029",
   "account_id": 1,
-  "operation_type_id": 1,
-  "amount": -123.45
+  "operation_type_id": 4,
+  "amount": 123.45
 }
 ```
 
