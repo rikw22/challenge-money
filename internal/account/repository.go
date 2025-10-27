@@ -9,7 +9,7 @@ import (
 
 type Repository interface {
 	GetByID(ctx context.Context, id string) (Account, error)
-	Create(ctx context.Context, documentNumber string) (Account, error)
+	Create(ctx context.Context, account *Account) error
 }
 
 type pgxRepository struct {
@@ -38,23 +38,21 @@ func (r *pgxRepository) GetByID(ctx context.Context, id string) (Account, error)
 	return a, nil
 }
 
-func (r *pgxRepository) Create(ctx context.Context, documentNumber string) (Account, error) {
+func (r *pgxRepository) Create(ctx context.Context, a *Account) error {
 	query := `
 		INSERT INTO account (document_number) VALUES ($1)
 		RETURNING id, created_at
 	`
 
-	row := r.db.QueryRow(ctx, query, documentNumber)
+	row := r.db.QueryRow(ctx, query, a.DocumentNumber)
 
-	var a Account
-	a.DocumentNumber = documentNumber
 	err := row.Scan(
 		&a.ID,
 		&a.CreatedAt,
 	)
 	if err != nil {
-		return Account{}, fmt.Errorf("failed to create user: %w", err)
+		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	return a, nil
+	return nil
 }

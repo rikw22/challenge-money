@@ -15,7 +15,7 @@ import (
 )
 
 type mockRepository struct {
-	createFunc func(ctx context.Context, documentNumber string) (Account, error)
+	createFunc func(ctx context.Context, account *Account) error
 	getFunc    func(ctx context.Context, accountId string) (Account, error)
 }
 
@@ -26,11 +26,11 @@ func (m *mockRepository) GetByID(ctx context.Context, accountId string) (Account
 	return Account{}, errors.New("not implemented")
 }
 
-func (m *mockRepository) Create(ctx context.Context, documentNumber string) (Account, error) {
+func (m *mockRepository) Create(ctx context.Context, account *Account) error {
 	if m.createFunc != nil {
-		return m.createFunc(ctx, documentNumber)
+		return m.createFunc(ctx, account)
 	}
-	return Account{}, errors.New("not implemented")
+	return errors.New("not implemented")
 }
 
 func TestHandler_Get(t *testing.T) {
@@ -124,12 +124,10 @@ func TestHandler_Create(t *testing.T) {
 				DocumentNumber: "12345678900",
 			},
 			setupMock: func(m *mockRepository) {
-				m.createFunc = func(ctx context.Context, documentNumber string) (Account, error) {
-					return Account{
-						ID:             1,
-						DocumentNumber: documentNumber,
-						CreatedAt:      time.Now(),
-					}, nil
+				m.createFunc = func(ctx context.Context, account *Account) error {
+					account.ID = 1
+					account.CreatedAt = time.Now()
+					return nil
 				}
 			},
 			expectedStatus: http.StatusCreated,
@@ -168,8 +166,8 @@ func TestHandler_Create(t *testing.T) {
 				DocumentNumber: "12345678900",
 			},
 			setupMock: func(m *mockRepository) {
-				m.createFunc = func(ctx context.Context, documentNumber string) (Account, error) {
-					return Account{}, errors.New("database error")
+				m.createFunc = func(ctx context.Context, account *Account) error {
+					return errors.New("database error")
 				}
 			},
 			expectedStatus: http.StatusInternalServerError,

@@ -32,6 +32,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	account, err := h.repository.GetByID(r.Context(), accountId)
 	if err != nil {
 		render.Render(w, r, httperrors.ErrInternalServer(err))
+		return
 	}
 
 	render.JSON(w, r, account)
@@ -49,7 +50,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := h.repository.Create(r.Context(), input.DocumentNumber)
+	var account Account
+	account.DocumentNumber = input.DocumentNumber
+
+	err := h.repository.Create(r.Context(), &account)
 	if err != nil {
 		render.Render(w, r, httperrors.ErrInternalServer(err))
 		return
