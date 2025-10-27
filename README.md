@@ -217,6 +217,7 @@ make docker-down
 
 ## Future Improvements
 
+- [ ] Idempotence handling for transactions
 - [ ] Graceful Shutdown - https://github.com/go-chi/chi/blob/master/_examples/graceful/main.go
 - [ ] Database migrations (e.g., golang-migrate, goose)
 - [ ] API documentation (Swagger/OpenAPI)
