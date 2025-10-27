@@ -127,7 +127,7 @@ curl -X POST http://localhost:8080/accounts \
 **Response** (201 Created):
 ```json
 {
-  "id": 1,
+  "account_id": 1,
   "document_number": "12345678901"
 }
 ```
@@ -140,7 +140,7 @@ curl http://localhost:8080/accounts/1
 **Response** (200 OK):
 ```json
 {
-  "id": 1,
+  "account_id": 1,
   "document_number": "12345678901",
   "created_at": "2025-10-27T00:18:14Z"
 }
@@ -233,6 +233,7 @@ make docker-down
 
 - [ ] Idempotence handling for transactions
 - [ ] Graceful Shutdown - https://github.com/go-chi/chi/blob/master/_examples/graceful/main.go
+- [ ] Integration tests
 - [ ] Database migrations (e.g., golang-migrate, goose)
 - [ ] API documentation (Swagger/OpenAPI)
 - [ ] Rate limiting
