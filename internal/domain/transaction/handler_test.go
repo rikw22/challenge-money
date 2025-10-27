@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -211,6 +212,103 @@ func TestHandler_Create(t *testing.T) {
 				if response.Amount == 0 {
 					t.Error("expected non-zero amount in response")
 				}
+			}
+		})
+	}
+}
+
+func TestHandler_Create_AmountSign(t *testing.T) {
+	tests := []struct {
+		name            string
+		operationTypeId int
+		inputAmount     float64
+		expectedAmount  int
+	}{
+		{
+			name:            "operation type 1 converts positive to negative",
+			operationTypeId: 1,
+			inputAmount:     50.00,
+			expectedAmount:  -5000,
+		},
+		{
+			name:            "operation type 2 converts positive to negative",
+			operationTypeId: 2,
+			inputAmount:     100.50,
+			expectedAmount:  -10050,
+		},
+		{
+			name:            "operation type 3 converts positive to negative",
+			operationTypeId: 3,
+			inputAmount:     75.25,
+			expectedAmount:  -7525,
+		},
+		{
+			name:            "operation type 4 keeps positive amount",
+			operationTypeId: 4,
+			inputAmount:     200.00,
+			expectedAmount:  20000,
+		},
+		{
+			name:            "operation type 1 with decimal amount",
+			operationTypeId: 1,
+			inputAmount:     50.99,
+			expectedAmount:  -5099,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var capturedAmount int
+
+			mockRepo := &mockRepository{
+				createFunc: func(ctx context.Context, transaction *Transaction) error {
+					capturedAmount = transaction.Amount
+					transaction.ID = pgtype.UUID{Bytes: [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, Valid: true}
+					transaction.EventDate = time.Now()
+					return nil
+				},
+			}
+
+			handler := NewHandler(validator.New(), mockRepo)
+
+			body := CreateTransactionRequest{
+				AccountId:       1,
+				OperationTypeId: tt.operationTypeId,
+				Amount:          tt.inputAmount,
+			}
+
+			bodyBytes, err := json.Marshal(body)
+			if err != nil {
+				t.Fatalf("failed to marshal request body: %v", err)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/transactions", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			handler.Create(w, req)
+
+			if w.Code != http.StatusCreated {
+				t.Errorf("expected status %d, got %d. Response body: %s", http.StatusCreated, w.Code, w.Body.String())
+			}
+
+			if capturedAmount != tt.expectedAmount {
+				t.Errorf("expected amount %d, got %d", tt.expectedAmount, capturedAmount)
+			}
+
+			// Verify response always returns positive amount
+			var response CreateTransactionResponse
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				t.Fatalf("failed to decode response: %v", err)
+			}
+
+			if response.Amount < 0 {
+				t.Errorf("response amount should always be positive, got %f", response.Amount)
+			}
+
+			expectedResponseAmount := math.Abs(float64(tt.expectedAmount) / 100)
+			if response.Amount != expectedResponseAmount {
+				t.Errorf("expected response amount %f, got %f", expectedResponseAmount, response.Amount)
 			}
 		})
 	}

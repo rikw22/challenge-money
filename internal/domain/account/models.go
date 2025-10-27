@@ -7,12 +7,12 @@ type CreateRequest struct {
 }
 
 type CreateResponse struct {
-	ID             int    `json:"id"`
+	ID             int    `json:"account_id"`
 	DocumentNumber string `json:"document_number"`
 }
 
 type GetResponse struct {
-	ID             int    `json:"id"`
+	ID             int    `json:"account_id"`
 	DocumentNumber string `json:"document_number"`
 	CreatedAt      string `json:"created_at"`
 }

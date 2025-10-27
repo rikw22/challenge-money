@@ -9,10 +9,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-playground/validator/v10"
-	"github.com/rikw22/challenge-money/internal/account"
-	"github.com/rikw22/challenge-money/internal/database"
-	"github.com/rikw22/challenge-money/internal/health"
-	"github.com/rikw22/challenge-money/internal/transaction"
+	"github.com/rikw22/challenge-money/internal/common/database"
+	"github.com/rikw22/challenge-money/internal/common/health"
+	"github.com/rikw22/challenge-money/internal/domain/account"
+	"github.com/rikw22/challenge-money/internal/domain/transaction"
 )
 
 var validate *validator.Validate

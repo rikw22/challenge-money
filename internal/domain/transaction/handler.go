@@ -7,7 +7,8 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	"github.com/rikw22/challenge-money/internal/httperrors"
+	"github.com/rikw22/challenge-money/pkg/httperrors"
+	"github.com/rikw22/challenge-money/pkg/validators"
 )
 
 type Handler struct {
@@ -16,6 +17,7 @@ type Handler struct {
 }
 
 func NewHandler(validate *validator.Validate, repository Repository) *Handler {
+	validate.RegisterValidation("max2decimals", validators.MaxTwoDecimals)
 	return &Handler{
 		validate:   validate,
 		repository: repository,
@@ -37,7 +39,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var t Transaction
 	t.AccountId = input.AccountId
 	t.OperationTypeId = input.OperationTypeId
-	t.Amount = int(input.Amount * 100)
+
+	amount := int(input.Amount * 100)
+	storedAmount := amount
+	// Purchases and withdrawals should be stored as negative
+	if t.OperationTypeId >= 1 && t.OperationTypeId <= 3 {
+		if amount > 0 {
+			storedAmount = -amount
+		}
+	}
+	t.Amount = storedAmount
 	t.EventDate = time.Now()
 
 	err := h.repository.Create(r.Context(), &t)
@@ -57,6 +68,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		ID:              responseID,
 		AccountId:       t.AccountId,
 		OperationTypeId: t.OperationTypeId,
-		Amount:          float64(t.Amount) / 100,
+		Amount:          float64(amount) / 100,
 	})
 }
