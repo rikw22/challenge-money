@@ -1,5 +1,7 @@
 .PHONY: run test test-coverage build
 
+.DEFAULT_GOAL := build
+
 run:
 	@echo "Starting postgres container..."
 	@docker compose up -d
@@ -10,7 +12,7 @@ run:
 	else \
 		echo "air command is not available. Falling back to go run without live reloading..."; \
 		echo "To enable live reloading, install air: go install github.com/air-verse/air@latest"; \
-		go run ./cmd/api/main.go; \
+		go run ./cmd/main.go; \
 	fi
 
 test:
@@ -21,7 +23,7 @@ test-coverage:
 	go tool cover -html=coverage.out
 
 build:
-	go build
+	go build ./cmd/main.go
 
 docker-up:
 	docker compose up -d
