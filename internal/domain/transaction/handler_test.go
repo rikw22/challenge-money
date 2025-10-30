@@ -62,13 +62,25 @@ func (m *mockAccountRepository) Exist(ctx context.Context, id int) (bool, error)
 	return false, errors.New("not implemented")
 }
 
+type mockOperationTypeRepository struct {
+	existFunc func(ctx context.Context, id int) (bool, error)
+}
+
+func (m *mockOperationTypeRepository) Exist(ctx context.Context, id int) (bool, error) {
+	if m.existFunc != nil {
+		return m.existFunc(ctx, id)
+	}
+	return false, errors.New("not implemented")
+}
+
 func TestHandler_Create(t *testing.T) {
 	tests := []struct {
-		name             string
-		body             interface{}
-		setupMock        func(*mockRepository)
-		setupAccountMock func(*mockAccountRepository)
-		expectedStatus   int
+		name                   string
+		body                   interface{}
+		setupMock              func(*mockRepository)
+		setupAccountMock       func(*mockAccountRepository)
+		setupOperationTypeMock func(*mockOperationTypeRepository)
+		expectedStatus         int
 	}{
 		{
 			name: "valid request",
@@ -89,6 +101,11 @@ func TestHandler_Create(t *testing.T) {
 				}
 			},
 			setupAccountMock: func(m *mockAccountRepository) {
+				m.existFunc = func(ctx context.Context, id int) (bool, error) {
+					return true, nil
+				}
+			},
+			setupOperationTypeMock: func(m *mockOperationTypeRepository) {
 				m.existFunc = func(ctx context.Context, id int) (bool, error) {
 					return true, nil
 				}
@@ -114,21 +131,28 @@ func TestHandler_Create(t *testing.T) {
 					return true, nil
 				}
 			},
+			setupOperationTypeMock: func(m *mockOperationTypeRepository) {
+				m.existFunc = func(ctx context.Context, id int) (bool, error) {
+					return true, nil
+				}
+			},
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:             "empty body",
-			body:             map[string]interface{}{},
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			name:                   "empty body",
+			body:                   map[string]interface{}{},
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
-			name:             "invalid json",
-			body:             "invalid json",
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			name:                   "invalid json",
+			body:                   "invalid json",
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "missing account_id",
@@ -136,9 +160,10 @@ func TestHandler_Create(t *testing.T) {
 				"operation_type_id": 4,
 				"amount":            123.45,
 			},
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "account_id zero",
@@ -147,9 +172,10 @@ func TestHandler_Create(t *testing.T) {
 				"operation_type_id": 4,
 				"amount":            123.45,
 			},
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "account_id negative",
@@ -158,9 +184,10 @@ func TestHandler_Create(t *testing.T) {
 				"operation_type_id": 4,
 				"amount":            123.45,
 			},
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "invalid account_id type",
@@ -169,9 +196,10 @@ func TestHandler_Create(t *testing.T) {
 				"operation_type_id": 4,
 				"amount":            123.45,
 			},
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "account does not exist",
@@ -186,7 +214,8 @@ func TestHandler_Create(t *testing.T) {
 					return false, nil
 				}
 			},
-			expectedStatus: http.StatusBadRequest,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "account validation error",
@@ -201,6 +230,47 @@ func TestHandler_Create(t *testing.T) {
 					return false, errors.New("database connection error")
 				}
 			},
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusInternalServerError,
+		},
+		{
+			name: "operation type does not exist",
+			body: CreateTransactionRequest{
+				AccountId:       1,
+				OperationTypeId: 5,
+				Amount:          123.45,
+			},
+			setupMock: nil,
+			setupAccountMock: func(m *mockAccountRepository) {
+				m.existFunc = func(ctx context.Context, id int) (bool, error) {
+					return true, nil
+				}
+			},
+			setupOperationTypeMock: func(m *mockOperationTypeRepository) {
+				m.existFunc = func(ctx context.Context, id int) (bool, error) {
+					return false, nil
+				}
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "operation type validation error",
+			body: CreateTransactionRequest{
+				AccountId:       1,
+				OperationTypeId: 4,
+				Amount:          123.45,
+			},
+			setupMock: nil,
+			setupAccountMock: func(m *mockAccountRepository) {
+				m.existFunc = func(ctx context.Context, id int) (bool, error) {
+					return true, nil
+				}
+			},
+			setupOperationTypeMock: func(m *mockOperationTypeRepository) {
+				m.existFunc = func(ctx context.Context, id int) (bool, error) {
+					return false, errors.New("database connection error")
+				}
+			},
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
@@ -209,9 +279,10 @@ func TestHandler_Create(t *testing.T) {
 				"account_id": 1,
 				"amount":     123.45,
 			},
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "invalid operation_type_id",
@@ -220,9 +291,10 @@ func TestHandler_Create(t *testing.T) {
 				"operation_type_id": 5,
 				"amount":            123.45,
 			},
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "missing amount",
@@ -230,9 +302,10 @@ func TestHandler_Create(t *testing.T) {
 				"account_id":        1,
 				"operation_type_id": 4,
 			},
-			setupMock:        nil,
-			setupAccountMock: nil,
-			expectedStatus:   http.StatusBadRequest,
+			setupMock:              nil,
+			setupAccountMock:       nil,
+			setupOperationTypeMock: nil,
+			expectedStatus:         http.StatusBadRequest,
 		},
 		{
 			name: "repository error",
@@ -254,6 +327,11 @@ func TestHandler_Create(t *testing.T) {
 					return true, nil
 				}
 			},
+			setupOperationTypeMock: func(m *mockOperationTypeRepository) {
+				m.existFunc = func(ctx context.Context, id int) (bool, error) {
+					return true, nil
+				}
+			},
 			expectedStatus: http.StatusInternalServerError,
 		},
 	}
@@ -270,7 +348,12 @@ func TestHandler_Create(t *testing.T) {
 				tt.setupAccountMock(mockAccountRepo)
 			}
 
-			handler := NewHandler(validator.New(), mockRepo, mockAccountRepo)
+			mockOperationTypeRepo := &mockOperationTypeRepository{}
+			if tt.setupOperationTypeMock != nil {
+				tt.setupOperationTypeMock(mockOperationTypeRepo)
+			}
+
+			handler := NewHandler(validator.New(), mockRepo, mockAccountRepo, mockOperationTypeRepo)
 
 			var bodyBytes []byte
 			var err error
@@ -381,7 +464,13 @@ func TestHandler_Create_AmountSign(t *testing.T) {
 				},
 			}
 
-			handler := NewHandler(validator.New(), mockRepo, mockAccountRepo)
+			mockOperationTypeRepo := &mockOperationTypeRepository{
+				existFunc: func(ctx context.Context, id int) (bool, error) {
+					return true, nil
+				},
+			}
+
+			handler := NewHandler(validator.New(), mockRepo, mockAccountRepo, mockOperationTypeRepo)
 
 			body := CreateTransactionRequest{
 				AccountId:       1,
@@ -555,7 +644,13 @@ func TestHandler_Create_PaymentAllocation(t *testing.T) {
 				},
 			}
 
-			handler := NewHandler(validator.New(), mockRepo, mockAccountRepo)
+			mockOperationTypeRepo := &mockOperationTypeRepository{
+				existFunc: func(ctx context.Context, id int) (bool, error) {
+					return true, nil
+				},
+			}
+
+			handler := NewHandler(validator.New(), mockRepo, mockAccountRepo, mockOperationTypeRepo)
 
 			body := CreateTransactionRequest{
 				AccountId:       1,

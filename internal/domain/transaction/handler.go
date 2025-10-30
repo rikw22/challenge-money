@@ -10,22 +10,25 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/rikw22/challenge-money/internal/domain/account"
+	"github.com/rikw22/challenge-money/internal/domain/operationtype"
 	"github.com/rikw22/challenge-money/pkg/httperrors"
 	"github.com/rikw22/challenge-money/pkg/validators"
 )
 
 type Handler struct {
-	validate          *validator.Validate
-	repository        Repository
-	accountRepository account.Repository
+	validate                *validator.Validate
+	repository              Repository
+	accountRepository       account.Repository
+	operationtypeRepository operationtype.Repository
 }
 
-func NewHandler(validate *validator.Validate, repository Repository, accountRepository account.Repository) *Handler {
+func NewHandler(validate *validator.Validate, repository Repository, accountRepository account.Repository, operationtypeRepository operationtype.Repository) *Handler {
 	validate.RegisterValidation("max2decimals", validators.MaxTwoDecimals)
 	return &Handler{
-		validate:          validate,
-		repository:        repository,
-		accountRepository: accountRepository,
+		validate:                validate,
+		repository:              repository,
+		accountRepository:       accountRepository,
+		operationtypeRepository: operationtypeRepository,
 	}
 }
 
@@ -52,7 +55,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Validate OperationTypeId
+	// Validate OperationTypeId
+	operationTypeExists, err := h.operationtypeRepository.Exist(r.Context(), input.OperationTypeId)
+	if err != nil {
+		render.Render(w, r, httperrors.ErrInternalServer(err))
+		return
+	}
+	if !operationTypeExists {
+		render.Render(w, r, httperrors.ErrInvalidRequest(fmt.Errorf("operation type with id %d does not exist", input.OperationTypeId)))
+		return
+	}
 
 	// Update the balance
 	if input.OperationTypeId == 4 {

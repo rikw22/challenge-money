@@ -12,6 +12,7 @@ import (
 	"github.com/rikw22/challenge-money/internal/common/database"
 	"github.com/rikw22/challenge-money/internal/common/health"
 	"github.com/rikw22/challenge-money/internal/domain/account"
+	"github.com/rikw22/challenge-money/internal/domain/operationtype"
 	"github.com/rikw22/challenge-money/internal/domain/transaction"
 )
 
@@ -33,13 +34,14 @@ func main() {
 
 	accountRepo := account.NewRepository(dbPool)
 	transactionRepo := transaction.NewRepository(dbPool)
+	operationtypeRepo := operationtype.NewRepository(dbPool)
 
 	// HTTP
 	validate = validator.New()
 
 	healthHandler := health.NewHandler()
 	accountHandler := account.NewHandler(validate, accountRepo)
-	transactionHandler := transaction.NewHandler(validate, transactionRepo, accountRepo)
+	transactionHandler := transaction.NewHandler(validate, transactionRepo, accountRepo, operationtypeRepo)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
