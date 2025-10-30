@@ -10,6 +10,7 @@ import (
 type Repository interface {
 	GetByID(ctx context.Context, id string) (Account, error)
 	Create(ctx context.Context, account *Account) error
+	Exist(ctx context.Context, id int) (bool, error)
 }
 
 type pgxRepository struct {
@@ -55,4 +56,19 @@ func (r *pgxRepository) Create(ctx context.Context, a *Account) error {
 	}
 
 	return nil
+}
+
+func (r *pgxRepository) Exist(ctx context.Context, id int) (bool, error) {
+	query := `SELECT COUNT(id)>0 FROM account WHERE id=$1;`
+
+	exist := false
+	row := r.db.QueryRow(ctx, query, id)
+	err := row.Scan(
+		&exist,
+	)
+	if err != nil {
+		return false, fmt.Errorf("failed to check if account exist: %w", err)
+	}
+
+	return exist, nil
 }

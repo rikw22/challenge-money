@@ -39,7 +39,7 @@ func main() {
 
 	healthHandler := health.NewHandler()
 	accountHandler := account.NewHandler(validate, accountRepo)
-	transactionHandler := transaction.NewHandler(validate, transactionRepo)
+	transactionHandler := transaction.NewHandler(validate, transactionRepo, accountRepo)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
