@@ -16,12 +16,28 @@ import (
 )
 
 type mockRepository struct {
-	createFunc func(ctx context.Context, transaction *Transaction) error
+	createFunc                             func(ctx context.Context, transaction *Transaction) error
+	getTransactionsWithNegativeBalanceFunc func(ctx context.Context, accountId int) ([]Transaction, error)
+	updateTransactionBalanceFunc           func(ctx context.Context, uuid pgtype.UUID, balance int) error
 }
 
 func (m *mockRepository) Create(ctx context.Context, transaction *Transaction) error {
 	if m.createFunc != nil {
 		return m.createFunc(ctx, transaction)
+	}
+	return errors.New("not implemented")
+}
+
+func (m *mockRepository) GetTransactionsWithNegativeBalance(ctx context.Context, accountId int) ([]Transaction, error) {
+	if m.getTransactionsWithNegativeBalanceFunc != nil {
+		return m.getTransactionsWithNegativeBalanceFunc(ctx, accountId)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockRepository) UpdateTransactionBalance(ctx context.Context, uuid pgtype.UUID, balance int) error {
+	if m.updateTransactionBalanceFunc != nil {
+		return m.updateTransactionBalanceFunc(ctx, uuid, balance)
 	}
 	return errors.New("not implemented")
 }
@@ -46,6 +62,9 @@ func TestHandler_Create(t *testing.T) {
 					t.ID = pgtype.UUID{Bytes: [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, Valid: true}
 					t.EventDate = time.Now()
 					return nil
+				}
+				m.getTransactionsWithNegativeBalanceFunc = func(ctx context.Context, accountId int) ([]Transaction, error) {
+					return []Transaction{}, nil
 				}
 			},
 			expectedStatus: http.StatusCreated,
@@ -155,6 +174,9 @@ func TestHandler_Create(t *testing.T) {
 			setupMock: func(m *mockRepository) {
 				m.createFunc = func(ctx context.Context, t *Transaction) error {
 					return errors.New("database error")
+				}
+				m.getTransactionsWithNegativeBalanceFunc = func(ctx context.Context, accountId int) ([]Transaction, error) {
+					return []Transaction{}, nil
 				}
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -267,6 +289,9 @@ func TestHandler_Create_AmountSign(t *testing.T) {
 					transaction.EventDate = time.Now()
 					return nil
 				},
+				getTransactionsWithNegativeBalanceFunc: func(ctx context.Context, accountId int) ([]Transaction, error) {
+					return []Transaction{}, nil
+				},
 			}
 
 			handler := NewHandler(validator.New(), mockRepo)
@@ -309,6 +334,170 @@ func TestHandler_Create_AmountSign(t *testing.T) {
 			expectedResponseAmount := math.Abs(float64(tt.expectedAmount) / 100)
 			if response.Amount != expectedResponseAmount {
 				t.Errorf("expected response amount %f, got %f", expectedResponseAmount, response.Amount)
+			}
+		})
+	}
+}
+
+func TestHandler_Create_PaymentAllocation(t *testing.T) {
+	tests := []struct {
+		name                     string
+		paymentAmount            float64
+		existingNegativeBalances []Transaction
+		expectedBalanceUpdates   map[string]int
+	}{
+		{
+			name:          "payment fully covers single debt",
+			paymentAmount: 100.00,
+			existingNegativeBalances: []Transaction{
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{1}, Valid: true},
+					Balance: -10000,
+				},
+			},
+			expectedBalanceUpdates: map[string]int{
+				"01000000-0000-0000-0000-000000000000": 0,
+			},
+		},
+		{
+			name:          "payment partially covers single debt",
+			paymentAmount: 50.00,
+			existingNegativeBalances: []Transaction{
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{1}, Valid: true},
+					Balance: -10000,
+				},
+			},
+			expectedBalanceUpdates: map[string]int{
+				"01000000-0000-0000-0000-000000000000": -5000,
+			},
+		},
+		{
+			name:          "payment covers multiple debts fully",
+			paymentAmount: 300.00,
+			existingNegativeBalances: []Transaction{
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{1}, Valid: true},
+					Balance: -10000,
+				},
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{2}, Valid: true},
+					Balance: -15000,
+				},
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{3}, Valid: true},
+					Balance: -5000,
+				},
+			},
+			expectedBalanceUpdates: map[string]int{
+				"01000000-0000-0000-0000-000000000000": 0,
+				"02000000-0000-0000-0000-000000000000": 0,
+				"03000000-0000-0000-0000-000000000000": 0,
+			},
+		},
+		{
+			name:          "payment covers some debts but not all",
+			paymentAmount: 180.00,
+			existingNegativeBalances: []Transaction{
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{1}, Valid: true},
+					Balance: -10000, // R$ 100,00
+				},
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{2}, Valid: true},
+					Balance: -15000, // R$ 150,00
+				},
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{3}, Valid: true},
+					Balance: -5000, // R$ 50,00
+				},
+			},
+			expectedBalanceUpdates: map[string]int{
+				"01000000-0000-0000-0000-000000000000": 0,
+				"02000000-0000-0000-0000-000000000000": -7000,
+			},
+		},
+		{
+			name:          "payment covers first debt and part of second",
+			paymentAmount: 120.00,
+			existingNegativeBalances: []Transaction{
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{1}, Valid: true},
+					Balance: -10000,
+				},
+				{
+					ID:      pgtype.UUID{Bytes: [16]byte{2}, Valid: true},
+					Balance: -15000,
+				},
+			},
+			expectedBalanceUpdates: map[string]int{
+				"01000000-0000-0000-0000-000000000000": 0,
+				"02000000-0000-0000-0000-000000000000": -13000,
+			},
+		},
+		{
+			name:                     "payment when no debts exist",
+			paymentAmount:            100.00,
+			existingNegativeBalances: []Transaction{},
+			expectedBalanceUpdates:   map[string]int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			balanceUpdates := make(map[string]int)
+
+			mockRepo := &mockRepository{
+				createFunc: func(ctx context.Context, transaction *Transaction) error {
+					transaction.ID = pgtype.UUID{Bytes: [16]byte{99}, Valid: true}
+					transaction.EventDate = time.Now()
+					return nil
+				},
+				getTransactionsWithNegativeBalanceFunc: func(ctx context.Context, accountId int) ([]Transaction, error) {
+					return tt.existingNegativeBalances, nil
+				},
+				updateTransactionBalanceFunc: func(ctx context.Context, uuid pgtype.UUID, balance int) error {
+					balanceUpdates[uuid.String()] = balance
+					return nil
+				},
+			}
+
+			handler := NewHandler(validator.New(), mockRepo)
+
+			body := CreateTransactionRequest{
+				AccountId:       1,
+				OperationTypeId: 4,
+				Amount:          tt.paymentAmount,
+			}
+
+			bodyBytes, err := json.Marshal(body)
+			if err != nil {
+				t.Fatalf("failed to marshal request body: %v", err)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/transactions", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			handler.Create(w, req)
+
+			if w.Code != http.StatusCreated {
+				t.Errorf("expected status %d, got %d. Response body: %s", http.StatusCreated, w.Code, w.Body.String())
+			}
+
+			if len(balanceUpdates) != len(tt.expectedBalanceUpdates) {
+				t.Errorf("expected %d balance updates, got %d", len(tt.expectedBalanceUpdates), len(balanceUpdates))
+			}
+
+			for uuid, expectedBalance := range tt.expectedBalanceUpdates {
+				actualBalance, ok := balanceUpdates[uuid]
+				if !ok {
+					t.Errorf("expected balance update for transaction %s, but none found", uuid)
+					continue
+				}
+				if actualBalance != expectedBalance {
+					t.Errorf("transaction %s: expected balance %d, got %d", uuid, expectedBalance, actualBalance)
+				}
 			}
 		})
 	}

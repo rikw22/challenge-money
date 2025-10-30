@@ -25,5 +25,6 @@ type Transaction struct {
 	AccountId       int
 	OperationTypeId int
 	Amount          int
+	Balance         int
 	EventDate       time.Time
 }

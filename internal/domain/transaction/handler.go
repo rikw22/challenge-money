@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -36,6 +37,19 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: Validate Account ID
+	// TODO: Validate OperationTypeId
+
+	// Update the balance
+	if input.OperationTypeId == 4 {
+		inputAmountInt := int(input.Amount * 100)
+		if err := h.dischargeNegativeBalances(r.Context(), input.AccountId, inputAmountInt); err != nil {
+			render.Render(w, r, httperrors.ErrInternalServer(err))
+			return
+		}
+	}
+
+	// Create the transaction
 	var t Transaction
 	t.AccountId = input.AccountId
 	t.OperationTypeId = input.OperationTypeId
@@ -70,4 +84,37 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		OperationTypeId: t.OperationTypeId,
 		Amount:          float64(amount) / 100,
 	})
+}
+
+func (h *Handler) dischargeNegativeBalances(ctx context.Context, accountId int, paymentAmount int) error {
+	transactionsWithNegativeBalance, err := h.repository.GetTransactionsWithNegativeBalance(ctx, accountId)
+	if err != nil {
+		return err
+	}
+
+	totalNegativeBalance := 0
+	for _, transaction := range transactionsWithNegativeBalance {
+		totalNegativeBalance += transaction.Balance
+	}
+
+	if len(transactionsWithNegativeBalance) > 0 && totalNegativeBalance < 0 {
+		remainingAmount := paymentAmount
+		for _, transaction := range transactionsWithNegativeBalance {
+			amountOwed := -transaction.Balance
+			remainingAmount = remainingAmount - amountOwed
+
+			newBalanceValue := remainingAmount
+			if remainingAmount >= 0 {
+				newBalanceValue = 0
+			}
+
+			h.repository.UpdateTransactionBalance(ctx, transaction.ID, newBalanceValue)
+
+			if remainingAmount < 0 {
+				break
+			}
+		}
+	}
+
+	return nil
 }
