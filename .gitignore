@@ -34,3 +34,4 @@ go.work.sum
 # Air tmp folder
 tmp/
 /challenge-money
+/main
