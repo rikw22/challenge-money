@@ -17,6 +17,7 @@ import (
 type mockRepository struct {
 	createFunc func(ctx context.Context, account *Account) error
 	getFunc    func(ctx context.Context, accountId string) (Account, error)
+	existFunc  func(ctx context.Context, id int) (bool, error)
 }
 
 func (m *mockRepository) GetByID(ctx context.Context, accountId string) (Account, error) {
@@ -31,6 +32,13 @@ func (m *mockRepository) Create(ctx context.Context, account *Account) error {
 		return m.createFunc(ctx, account)
 	}
 	return errors.New("not implemented")
+}
+
+func (m *mockRepository) Exist(ctx context.Context, id int) (bool, error) {
+	if m.existFunc != nil {
+		return m.existFunc(ctx, id)
+	}
+	return false, errors.New("not implemented")
 }
 
 func TestHandler_Get(t *testing.T) {
