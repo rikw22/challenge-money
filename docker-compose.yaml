@@ -4,6 +4,7 @@ services:
     # I decided to use a Debian-based image because Alpine has some vulnerabilities
     image: postgres:18.0-bookworm
     restart: unless-stopped
+    command: ["postgres", "-c", "log_statement=all"]
     ports:
       - "5432:5432"
     environment:
